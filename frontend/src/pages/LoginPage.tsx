@@ -1,4 +1,5 @@
 import React, { useState, KeyboardEvent } from "react";
+import { useNavigate } from "react-router-dom";  // ← ADDED
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const API_BASE = "http://localhost:8000/api";
@@ -45,7 +46,10 @@ async function apiLogin(username: string, password: string): Promise<ApiResponse
     if (res.ok && data.access) {
       localStorage.setItem("access_token", data.access);
       localStorage.setItem("refresh_token", data.refresh ?? "");
-      return { success: true, message: data.message || `Welcome back!`, ...data };
+      // ── Persist user info so the dashboard can display it ─────────────────
+      const userPayload = data.user ?? { username, name: username, email: "" };
+      localStorage.setItem("user", JSON.stringify(userPayload));
+      return { success: true, message: data.message || "Welcome back!", ...data };
     }
     return { success: false, message: data.message || "Invalid credentials." };
   } catch (err) { return { success: false, message: "Connection error." }; }
@@ -111,17 +115,17 @@ const IconBolt = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="no
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const S: Record<string, React.CSSProperties> = {
-  body:         { fontFamily:"'DM Sans','Segoe UI',sans-serif", background:"#f8fafd", width: "100vw", height: "100vh", display:"flex", alignItems:"center", justifyContent:"center", position:"fixed", top:0, left:0, overflow:"hidden" },
+  body:         { fontFamily:"'DM Sans','Segoe UI',sans-serif", background:"#f8fafd", width:"100vw", height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", position:"fixed", top:0, left:0, overflow:"hidden" },
   dotGrid:      { position:"absolute", inset:0, backgroundImage:"radial-gradient(circle, rgba(26,86,219,0.06) 1px, transparent 1px)", backgroundSize:"28px 28px", pointerEvents:"none", zIndex:0 },
   blob1:        { position:"absolute", top:-200, left:-200, width:800, height:800, background:"radial-gradient(circle, rgba(26,86,219,0.07) 0%, transparent 70%)", pointerEvents:"none", borderRadius:"50%" },
   blob2:        { position:"absolute", bottom:-200, right:-200, width:900, height:900, background:"radial-gradient(circle, rgba(14,165,233,0.06) 0%, transparent 70%)", pointerEvents:"none", borderRadius:"50%" },
-  wrapper:      { position:"relative", zIndex:1, width:"90%", maxWidth:580, display: "flex", flexDirection: "column", alignItems: "center" },
+  wrapper:      { position:"relative", zIndex:1, width:"90%", maxWidth:580, display:"flex", flexDirection:"column", alignItems:"center" },
   brandHeader:  { textAlign:"center", marginBottom:40 },
   brandLogo:    { display:"inline-flex", alignItems:"center", gap:14, marginBottom:8 },
   logoIcon:     { width:52, height:52, background:"linear-gradient(135deg,#1a56db 0%,#0ea5e9 100%)", borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 6px 16px rgba(26,86,219,0.28)" },
   brandName:    { fontFamily:"'Syne','Segoe UI',sans-serif", fontSize:26, fontWeight:800, color:"#0f172a", letterSpacing:"-0.5px", margin:0 },
   brandSub:     { fontSize:12, fontWeight:500, color:"#94a3b8", letterSpacing:3, textTransform:"uppercase" as const },
-  card:         { background:"#ffffff", borderRadius:24, boxShadow:"0 30px 70px rgba(26,86,219,0.12),0 8px 24px rgba(0,0,0,0.05)", padding:"56px 64px", border:"1px solid rgba(226,232,240,0.7)", position:"relative", overflow:"hidden", width: "100%" },
+  card:         { background:"#ffffff", borderRadius:24, boxShadow:"0 30px 70px rgba(26,86,219,0.12),0 8px 24px rgba(0,0,0,0.05)", padding:"56px 64px", border:"1px solid rgba(226,232,240,0.7)", position:"relative", overflow:"hidden", width:"100%" },
   cardTop:      { position:"absolute", top:0, left:0, right:0, height:4, background:"linear-gradient(90deg,#1a56db,#0ea5e9)" },
   panelTitle:   { fontFamily:"'Syne',sans-serif", fontSize:28, fontWeight:700, color:"#0f172a", marginBottom:8 },
   panelSub:     { fontSize:15, color:"#475569", marginBottom:32, lineHeight:1.6 },
@@ -189,13 +193,15 @@ const Spinner = () => (<span style={{width:20,height:20,border:"2.5px solid rgba
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const LoginPage: React.FC = () => {
+  const navigate = useNavigate(); // ← ADDED — must be inside <Router>
+
   const [panel, setPanel] = useState<Panel>("login");
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPw,   setShowLoginPw]   = useState(false);
   const [loginAlert,    setLoginAlert]    = useState<AlertState|null>(null);
   const [loginLoading,  setLoginLoading]  = useState(false);
-  
+
   const [regName,     setRegName]     = useState("");
   const [regEmail,    setRegEmail]    = useState("");
   const [regUsername, setRegUsername] = useState("");
@@ -207,23 +213,20 @@ const LoginPage: React.FC = () => {
   const [forgotEmail,   setForgotEmail]   = useState("");
   const [forgotAlert,   setForgotAlert]   = useState<AlertState|null>(null);
   const [forgotLoading, setForgotLoading] = useState(false);
-  
+
   const [successMsg, setSuccessMsg] = useState("");
   const strength = getPasswordStrength(regPassword);
 
   React.useEffect(() => {
     log.divider("PAGE DIMENSIONS");
     log.layout();
-
     const handleResize = () => log.layout();
     window.addEventListener("resize", handleResize);
-
     log.divider("API CHECK");
     fetch(`${API_BASE}/health/`)
       .then(r => r.json())
       .then(d => log.success("Django is reachable ✅", d))
       .catch(() => log.error("Django is NOT reachable ❌"));
-
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
@@ -232,6 +235,7 @@ const LoginPage: React.FC = () => {
     setLoginAlert(null); setRegAlert(null); setForgotAlert(null);
   };
 
+  // ── LOGIN — navigate to /dashboard on success ─────────────────────────────
   const handleLogin = async () => {
     if (!loginUsername || !loginPassword) {
       setLoginAlert({type:"error", message:"Please fill in all fields."});
@@ -240,8 +244,12 @@ const LoginPage: React.FC = () => {
     setLoginLoading(true);
     const res = await apiLogin(loginUsername, loginPassword);
     setLoginLoading(false);
-    if (res.success) { setSuccessMsg(res.message); setPanel("success"); }
-    else setLoginAlert({type:"error", message: res.message});
+    if (res.success) {
+      log.success("Login successful — redirecting to dashboard");
+      navigate("/dashboard", { replace: true }); // ← KEY CHANGE
+    } else {
+      setLoginAlert({type:"error", message: res.message});
+    }
   };
 
   const handleRegister = async () => {
@@ -279,18 +287,12 @@ const LoginPage: React.FC = () => {
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
         @keyframes spin   { to { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
-        
         .ll-wrap { animation: fadeUp 0.6s cubic-bezier(.22,.68,0,1.2) both; }
-        
-        @media (min-width: 1024px) {
-          .ll-wrap { max-width: 620px !important; }
-        }
-
+        @media (min-width: 1024px) { .ll-wrap { max-width: 620px !important; } }
         @media (max-width: 580px) {
           .ll-card { padding: 32px 24px !important; border-radius: 16px !important; }
           .ll-title { font-size: 24px !important; }
         }
-
         .ll-link:hover { text-decoration:underline; opacity:0.75; }
         .ll-back:hover { color:#1a56db !important; background:#eff6ff !important; }
         .ll-primary:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 22px rgba(26,86,219,0.35) !important; }
@@ -366,13 +368,13 @@ const LoginPage: React.FC = () => {
               </div>
             )}
 
-            {/* SUCCESS PANEL */}
+            {/* SUCCESS PANEL — shown only after registration, not login */}
             {panel==="success" && (
               <div style={S.successCenter}>
                 <div style={S.successIcon}><IconCheck/></div>
-                <div className="ll-title" style={S.panelTitle}>Done!</div>
+                <div className="ll-title" style={S.panelTitle}>Account Created!</div>
                 <div style={{...S.panelSub,marginBottom:28}}>{successMsg}</div>
-                <button className="ll-primary" style={{...S.btnPrimary,maxWidth:240,margin:"0 auto"}} onClick={()=>goTo("login")}>Continue</button>
+                <button className="ll-primary" style={{...S.btnPrimary,maxWidth:240,margin:"0 auto"}} onClick={()=>goTo("login")}>Sign In Now</button>
               </div>
             )}
           </div>
