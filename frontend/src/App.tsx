@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import LoginPage from "./pages/LoginPage";
 import SensorDashboard from "./pages/SensorDashboard";
+import LoginPage from "./pages/Loginpage";
 
 // ─── Auth check ───────────────────────────────────────────────────────────────
 // Reads the access_token saved by LoginPage after a successful /api/login/ call
@@ -29,10 +29,7 @@ const App: React.FC = () => {
         />
 
         {/* Protected dashboard */}
-        <Route
-          path="/dashboard"
-          element={<PrivateRoute element={<SensorDashboard />} />}
-        />
+        <Route path="/dashboard"element={<PrivateRoute element={<SensorDashboard />} />}/>
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/login" replace />} />
