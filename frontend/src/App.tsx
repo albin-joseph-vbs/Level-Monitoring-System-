@@ -1,27 +1,35 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Dashboard from './pages/Dashboard'
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+// import Dashboard from "./pages/Dashboard"; // ← add your protected pages here
 
-// As you build more pages, import them here:
-// import Vessels from './pages/Vessels'
-// import Alerts  from './pages/Alerts'
-// import Settings from './pages/Settings'
+// ─── Simple auth guard ────────────────────────────────────────────────────────
+// Replace this with your real auth check (e.g. check context / redux store / token)
+const isAuthenticated = (): boolean => {
+  return !!localStorage.getItem("token");
+};
 
-export default function App() {
+const PrivateRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
+  return isAuthenticated() ? element : <Navigate to="/login" replace />;
+};
+
+// ─── App ──────────────────────────────────────────────────────────────────────
+const App: React.FC = () => {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
-        {/* Main dashboard — loads at http://localhost:5173 */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
 
-        {/* Add new pages below as you build them */}
-        {/* <Route path="/vessels"  element={<Vessels />}  /> */}
-        {/* <Route path="/alerts"   element={<Alerts />}   /> */}
-        {/* <Route path="/settings" element={<Settings />} /> */}
+        {/* Protected routes — uncomment and add your pages */}
+        {/* <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} /> */}
 
-        {/* Catch-all — redirect unknown URLs to dashboard */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* Default redirect */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-    </BrowserRouter>
-  )
-}
+    </Router>
+  );
+};
+
+export default App;

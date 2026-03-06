@@ -4,3 +4,8 @@ django-cors-headers==4.9.0
 djangorestframework==3.16.1
 python-dotenv==1.2.2
 sqlparse==0.5.5
+Django==4.2.7
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.0
+django-cors-headers==4.3.1
+python-decouple==3.8
