@@ -20,7 +20,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'id':       self.user.id,
             'username': self.user.username,
             'email':    self.user.email,
-            'name':     self.user.get_full_name() or self.user.username,
+            'name':         self.user.get_full_name() or self.user.username,
+            'is_superuser': self.user.is_superuser,
+            'is_staff':     self.user.is_staff,
+            'role':         'admin' if self.user.is_superuser else 'operator',
         }
         return data
 
