@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip,
@@ -19,7 +20,6 @@ import {
 // ─── THEMES ───────────────────────────────────────────────────────────────────
 const T = {
   dark: {
-    // Much lighter dark — slate blues instead of near-black
     bg:"#0f1729",
     surface:"#1a2540",
     surfaceAlt:"#1e2d4a",
@@ -27,20 +27,16 @@ const T = {
     border:"rgba(148,188,255,0.12)",
     borderMd:"rgba(148,188,255,0.20)",
     borderHi:"rgba(148,188,255,0.35)",
-    // Text — brighter for readability
     text:"#e8f0ff",
     textSub:"#8eaacc",
     textMuted:"#5a7ba8",
-    // Accents
     accent:"#4db8ff",
     accent2:"#a78bfa",
     accentGlow:"rgba(77,184,255,0.22)",
     a2Glow:"rgba(167,139,250,0.22)",
-    // Status
     ok:"#34d399",
     warn:"#fbbf24",
     err:"#f87171",
-    // UI
     hBg:"rgba(15,23,41,0.96)",
     sh:"0 2px 16px rgba(0,0,0,0.35),0 1px 0 rgba(148,188,255,0.06)",
     shH:"0 8px 32px rgba(0,0,0,0.5),0 1px 0 rgba(148,188,255,0.10)",
@@ -160,7 +156,7 @@ const gl=(vs)=>vs.map((v,i)=>({
   status:Math.random()>.1?"ok":Math.random()>.5?"warn":"err",
 }));
 const gp=(vs,lbl)=>{const p={time:lbl};vs.slice(0,5).forEach((_,i)=>{p[`s1_${i}`]=+(-195.5+i*.2+(Math.random()-.5)*.5).toFixed(2);p[`s2_${i}`]=+(-195+i*.15+(Math.random()-.5)*.4).toFixed(2);p[`rm_${i}`]=+(22+i*.3+(Math.random()-.5)*1.2).toFixed(2);p[`lv_${i}`]=+Math.min(100,Math.max(60,85-i*2+(Math.random()-.5)*4)).toFixed(1);});return p;};
-const gs=(vs,n=20)=>Array.from({length:n},(_,i)=>{const d=new Date(Date.now()-(n-i)*60000);return gp(vs,`${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`);});
+const gs=(vs,n=20)=>Array.from({length:n},(_,i)=>{const d=new Date(Date.now()-(n-i)*60000);return gp(vs,`${d.getHours().toString().padStart(2,"00")}:${d.getMinutes().toString().padStart(2,"00")}`);});
 
 // ─── SHARED UI ────────────────────────────────────────────────────────────────
 const PageWrap=({children})=><div style={{width:"100%"}}>{children}</div>;
@@ -186,76 +182,6 @@ const CB=({checked,onChange,t,ind=false})=>{const ref=useRef(null);useEffect(()=
 const Toast=({msg,ok,t})=>(<div style={{position:"fixed",bottom:24,right:24,zIndex:9999,background:ok?t.ok:t.err,color:"#fff",borderRadius:10,padding:"12px 20px",display:"flex",alignItems:"center",gap:8,fontSize:13,fontWeight:700,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",animation:"fadeUp .3s ease both"}}><CheckCircle size={15}/> {msg}</div>);
 
 const CTip=({active,payload,label,t,unit=""})=>{if(!active||!payload?.length)return null;return(<div style={{background:t.surfaceEl,border:`1px solid ${t.borderMd}`,borderRadius:10,padding:"11px 15px",minWidth:130,boxShadow:"0 12px 40px rgba(0,0,0,0.4)"}}><div style={{fontSize:9,color:t.textMuted,fontWeight:700,marginBottom:7,letterSpacing:"0.09em",fontFamily:"'Space Mono',monospace"}}>{label}</div>{payload.map((p,i)=>(<div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:14,marginBottom:3}}><div style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:7,height:7,borderRadius:2,background:p.color}}/><span style={{fontSize:10,color:t.textSub}}>{p.name}</span></div><span style={{fontSize:11,fontWeight:700,color:t.text,fontFamily:"'Space Mono',monospace"}}>{p.value}{unit}</span></div>))}</div>);};
-
-// ─── SIGN IN PAGE ─────────────────────────────────────────────────────────────
-const SignInPage=({onLogin,dark,setDark})=>{
-  const t=dark?T.dark:T.light;
-  const [email,setEmail]=useState("");
-  const [pw,setPw]=useState("");
-  const [showPw,setShowPw]=useState(false);
-  const [loading,setLoading]=useState(false);
-  const [error,setError]=useState("");
-
-  const handle=()=>{
-    if(!email||!pw){setError("Please enter your email and password.");return;}
-    setError("");setLoading(true);
-    setTimeout(()=>{setLoading(false);onLogin();},1200);
-  };
-
-  return(
-    <div style={{minHeight:"100vh",background:t.bg,display:"flex",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
-      <style>{CSS}</style>
-      {/* Background glow */}
-      <div style={{position:"absolute",top:"20%",left:"50%",transform:"translateX(-50%)",width:600,height:600,background:`radial-gradient(circle,${t.accent}12,transparent 65%)`,pointerEvents:"none"}}/>
-      <div style={{position:"absolute",bottom:"10%",right:"10%",width:400,height:400,background:`radial-gradient(circle,${t.accent2}10,transparent 65%)`,pointerEvents:"none"}}/>
-
-      {/* Theme toggle */}
-      <button onClick={()=>setDark(d=>!d)} style={{position:"absolute",top:20,right:20,width:36,height:36,borderRadius:9,cursor:"pointer",background:t.surface,border:`1px solid ${t.border}`,color:t.textSub,display:"flex",alignItems:"center",justifyContent:"center"}}>{dark?<Sun size={14}/>:<Moon size={14}/>}</button>
-
-      <div className="fu" style={{width:"100%",maxWidth:420,padding:"0 20px"}}>
-        {/* Logo */}
-        <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:60,height:60,borderRadius:16,background:`linear-gradient(135deg,${t.accent},${t.accent2})`,boxShadow:`0 8px 32px ${t.accentGlow}`,marginBottom:16}}><Shield color="#fff" size={26}/></div>
-          <div style={{fontSize:24,fontWeight:800,color:t.text,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.07em"}}>LN₂ CRYOMONITOR</div>
-          <div style={{fontSize:11,color:t.textMuted,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:4,fontFamily:"'Space Mono',monospace"}}>ADMIN CONTROL PANEL</div>
-        </div>
-
-        {/* Card */}
-        <div style={{background:t.surface,border:`1px solid ${t.border}`,borderRadius:16,padding:32,boxShadow:t.shH}}>
-          <div style={{fontSize:18,fontWeight:700,color:t.text,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.05em",marginBottom:6}}>Sign In</div>
-          <div style={{fontSize:12,color:t.textSub,marginBottom:24}}>Enter your credentials to access the admin panel.</div>
-
-          {error&&<div style={{display:"flex",alignItems:"center",gap:8,background:`${t.err}14`,border:`1px solid ${t.err}35`,borderRadius:9,padding:"10px 14px",marginBottom:18,fontSize:12,color:t.err,fontWeight:600}}><AlertTriangle size={14}/>{error}</div>}
-
-          <div style={{marginBottom:14}}>
-            <div style={{fontSize:10,fontWeight:700,color:t.textSub,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:7,fontFamily:"'Rajdhani',sans-serif"}}>Email Address</div>
-            <TI value={email} onChange={setEmail} placeholder="admin@cryo-lab.com" t={t} type="email"/>
-          </div>
-
-          <div style={{marginBottom:22}}>
-            <div style={{fontSize:10,fontWeight:700,color:t.textSub,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:7,fontFamily:"'Rajdhani',sans-serif"}}>Password</div>
-            <div style={{position:"relative"}}>
-              <TI value={pw} onChange={setPw} placeholder="••••••••" t={t} type={showPw?"text":"password"}/>
-              <button onClick={()=>setShowPw(s=>!s)} style={{position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:t.textMuted,display:"flex",padding:0}}>{showPw?<EyeOff size={15}/>:<Eye size={15}/>}</button>
-            </div>
-          </div>
-
-          <button onClick={handle} disabled={loading} className="bs" style={{width:"100%",padding:"12px",borderRadius:10,cursor:loading?"not-allowed":"pointer",background:`linear-gradient(135deg,${t.accent},${t.accent2})`,border:"none",color:"#fff",fontSize:14,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:`0 4px 20px ${t.accentGlow}`,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.08em",opacity:loading?0.8:1}}>
-            {loading?(<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .7s linear infinite"}}/> AUTHENTICATING…</>):(<><Lock size={15}/> SIGN IN</>)}
-          </button>
-
-          <div style={{marginTop:20,padding:"14px 16px",background:t.surfaceAlt,borderRadius:9,border:`1px solid ${t.border}`}}>
-            <div style={{fontSize:10,fontWeight:700,color:t.textSub,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.08em",marginBottom:6}}>DEMO CREDENTIALS</div>
-            <div style={{fontSize:11,color:t.textMuted,fontFamily:"'Space Mono',monospace"}}>Email: <span style={{color:t.accent}}>admin@cryo-lab.com</span></div>
-            <div style={{fontSize:11,color:t.textMuted,fontFamily:"'Space Mono',monospace",marginTop:3}}>Password: <span style={{color:t.accent}}>any password</span></div>
-          </div>
-        </div>
-
-        <div style={{textAlign:"center",marginTop:20,fontSize:10,color:t.textMuted,fontFamily:"'Space Mono',monospace",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}><Lock size={9}/> Secure encrypted connection</div>
-      </div>
-    </div>
-  );
-};
 
 // ─── OVERVIEW TAB ─────────────────────────────────────────────────────────────
 const OverviewTab=({vessels,liveData,timeData,t})=>{
@@ -283,7 +209,7 @@ const OverviewTab=({vessels,liveData,timeData,t})=>{
                 <XAxis dataKey="time" tick={{fill:t.textMuted,fontSize:9,fontFamily:"Space Mono"}} tickLine={false} axisLine={{stroke:t.border}} interval={4}/>
                 <YAxis tick={{fill:t.textMuted,fontSize:9,fontFamily:"Space Mono"}} tickLine={false} axisLine={false} domain={["auto","auto"]}/>
                 <Tooltip content={<CTip t={t} unit="°C"/>}/>
-                {vessels.slice(0,5).map((_,i)=><Line key={i} type="monotone" dataKey={`${cfg.k}_${i}`} name={`DU-${String(i+1).padStart(2,"0")}`} stroke={COLORS[i]} strokeWidth={1.5} dot={false} activeDot={{r:3}}/>)}
+                {vessels.slice(0,5).map((_,i)=><Line key={i} type="monotone" dataKey={`${cfg.k}_${i}`} name={`DU-${String(i+1).padStart(2,"00")}`} stroke={COLORS[i]} strokeWidth={1.5} dot={false} activeDot={{r:3}}/>)}
               </LineChart>
             </ResponsiveContainer>
           </Card>
@@ -318,7 +244,7 @@ const OverviewTab=({vessels,liveData,timeData,t})=>{
               <XAxis dataKey="time" tick={{fill:t.textMuted,fontSize:9,fontFamily:"Space Mono"}} tickLine={false} axisLine={{stroke:t.border}} interval={4}/>
               <YAxis tick={{fill:t.textMuted,fontSize:9,fontFamily:"Space Mono"}} tickLine={false} axisLine={false} domain={["auto","auto"]}/>
               <Tooltip content={<CTip t={t} unit="°C"/>}/>
-              {vessels.slice(0,5).map((_,i)=><Area key={i} type="monotone" dataKey={`rm_${i}`} name={`DU-${String(i+1).padStart(2,"0")}`} stroke={COLORS[i]} strokeWidth={1.5} fill={`url(#rg${i})`} dot={false}/>)}
+              {vessels.slice(0,5).map((_,i)=><Area key={i} type="monotone" dataKey={`rm_${i}`} name={`DU-${String(i+1).padStart(2,"00")}`} stroke={COLORS[i]} strokeWidth={1.5} fill={`url(#rg${i})`} dot={false}/>)}
             </AreaChart>
           </ResponsiveContainer>
         </Card>
@@ -362,7 +288,7 @@ const SensorDataTab=({liveData,vessels,t})=>{
               const ok2={s1:v&&row.s1>=v.s1.min&&row.s1<=v.s1.max,s2:v&&row.s2>=v.s2.min&&row.s2<=v.s2.max,room:v&&row.room>=v.room.min&&row.room<=v.room.max,level:v&&row.level>=v.level.min&&row.level<=v.level.max};
               const tdS=(r)=>({padding:"11px 14px",fontSize:12,fontWeight:600,color:r?t.text:t.err,borderBottom:`1px solid ${t.border}`,fontFamily:"'Space Mono',monospace",background:!r?`${t.err}08`:"transparent"});
               return(<tr key={row.id} className="rh" style={{transition:"background .12s"}}>
-                <td style={{padding:"11px 14px",borderBottom:`1px solid ${t.border}`}}><div style={{display:"flex",alignItems:"center",gap:9}}><div style={{width:28,height:28,borderRadius:7,background:`${t.accent}20`,border:`1px solid ${t.accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:t.accent,fontFamily:"'Rajdhani',sans-serif"}}>{String(row.id+1).padStart(2,"0")}</div><div><div style={{fontSize:12,fontWeight:700,color:t.text,fontFamily:"'Rajdhani',sans-serif"}}>{row.name}</div><div style={{fontSize:9,color:t.textMuted}}>Dewar Unit</div></div></div></td>
+                <td style={{padding:"11px 14px",borderBottom:`1px solid ${t.border}`}}><div style={{display:"flex",alignItems:"center",gap:9}}><div style={{width:28,height:28,borderRadius:7,background:`${t.accent}20`,border:`1px solid ${t.accent}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:t.accent,fontFamily:"'Rajdhani',sans-serif"}}>{String(row.id+1).padStart(2,"00")}</div><div><div style={{fontSize:12,fontWeight:700,color:t.text,fontFamily:"'Rajdhani',sans-serif"}}>{row.name}</div><div style={{fontSize:9,color:t.textMuted}}>Dewar Unit</div></div></div></td>
                 <td style={{padding:"11px 14px",borderBottom:`1px solid ${t.border}`}}><Dot status={row.status} t={t}/></td>
                 <td style={tdS(ok2.s1)}>{row.s1}°C{!ok2.s1&&<AlertTriangle size={10} style={{display:"inline",marginLeft:4}}/>}</td>
                 <td style={tdS(ok2.s2)}>{row.s2}°C{!ok2.s2&&<AlertTriangle size={10} style={{display:"inline",marginLeft:4}}/>}</td>
@@ -423,9 +349,9 @@ const ConfigTab=({vessels,onChange,onDelete,t})=>{
         return(<div key={idx} className="fu" style={{background:t.surface,border:`1px solid ${ic?t.accent+"55":he?t.warn+"55":t.border}`,borderRadius:12,overflow:"hidden",marginBottom:7,boxShadow:t.sh,transition:"box-shadow .18s,border-color .18s"}}>
           <div style={{display:"flex",alignItems:"center",padding:"12px 16px",gap:12}}>
             <div onClick={e=>{e.stopPropagation();tgOne(idx);}}><CB checked={ic} onChange={()=>tgOne(idx)} t={t}/></div>
-            <div style={{width:34,height:34,borderRadius:9,flexShrink:0,background:`${t.accent}22`,border:`1px solid ${t.accent}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:t.accent,fontFamily:"'Rajdhani',sans-serif"}}>{String(idx+1).padStart(2,"0")}</div>
+            <div style={{width:34,height:34,borderRadius:9,flexShrink:0,background:`${t.accent}22`,border:`1px solid ${t.accent}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:t.accent,fontFamily:"'Rajdhani',sans-serif"}}>{String(idx+1).padStart(2,"00")}</div>
             <div className="rh" onClick={()=>setExp(io?null:idx)} style={{flex:1,cursor:"pointer",borderRadius:7,padding:"4px 7px",transition:"background .12s"}}>
-              <div style={{fontSize:13,fontWeight:700,color:t.text,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.03em"}}>DEWAR UNIT DU-{String(idx+1).padStart(2,"0")}</div>
+              <div style={{fontSize:13,fontWeight:700,color:t.text,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.03em"}}>DEWAR UNIT DU-{String(idx+1).padStart(2,"00")}</div>
               <div style={{display:"flex",gap:12,marginTop:2,flexWrap:"wrap"}}>{SM.map(s=><span key={s.key} style={{fontSize:9,color:t.textSub,fontFamily:"'Space Mono',monospace"}}><span style={{color:t[s.key]}}>{s.sl}</span>: {vessel[s.key].min}–{vessel[s.key].max}{s.unit}</span>)}</div>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:9}}>
@@ -465,11 +391,10 @@ const AddVesselTab=({vessels,onAdd,t})=>{
     {icon:"⚗️",label:"Custom",sub:"Configure all params",color:t.warn,config:DV()},
   ];
   const STEPS=[{label:"Profile",icon:FlaskConical},{label:"Tolerances",icon:SlidersHorizontal},{label:"Review",icon:CheckCircle}];
-  const handleSubmit=()=>{if(invalid)return;onAdd({...draft,_meta:{name:name||`DU-${String(nextIdx).padStart(2,"0")}`,desc,loc}});setDraft(DV());setName("");setDesc("");setLoc("");setDone(true);setStep(0);setTimeout(()=>setDone(false),3000);};
+  const handleSubmit=()=>{if(invalid)return;onAdd({...draft,_meta:{name:name||`DU-${String(nextIdx).padStart(2,"00")}`,desc,loc}});setDraft(DV());setName("");setDesc("");setLoc("");setDone(true);setStep(0);setTimeout(()=>setDone(false),3000);};
   return(
     <PageWrap>
       {done&&<div className="fu" style={{display:"flex",alignItems:"center",gap:11,background:`${t.ok}18`,border:`1px solid ${t.ok}40`,borderRadius:12,padding:"14px 20px",marginBottom:18}}><CheckCircle size={18} color={t.ok}/><div><div style={{fontSize:13,fontWeight:700,color:t.ok,fontFamily:"'Rajdhani',sans-serif"}}>VESSEL ADDED SUCCESSFULLY</div><div style={{fontSize:10,color:t.textSub,marginTop:2}}>Total fleet: {vessels.length} dewar units</div></div></div>}
-      {/* Steps */}
       <div className="fu" style={{display:"flex",alignItems:"center",background:t.surface,border:`1px solid ${t.border}`,borderRadius:12,padding:"14px 22px",marginBottom:22,boxShadow:t.sh}}>
         {STEPS.map((s,i)=>{const active=step===i;const d2=step>i;const Ic=s.icon;return(<React.Fragment key={i}><div style={{display:"flex",alignItems:"center",gap:9,flex:i<STEPS.length-1?1:"auto"}}>
           <div style={{width:32,height:32,borderRadius:9,background:d2?`${t.ok}22`:active?`${t.accent}22`:`${t.textMuted}14`,border:`1px solid ${d2?t.ok+"50":active?t.accent+"50":t.border}`,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .3s"}}>{d2?<CheckCircle size={14} color={t.ok}/>:<Ic size={14} color={active?t.accent:t.textMuted}/>}</div>
@@ -492,10 +417,10 @@ const AddVesselTab=({vessels,onAdd,t})=>{
             </button>
           ))}
         </div>
-        <SHdr title="VESSEL PROFILE" sub={`Identity for DU-${String(nextIdx).padStart(2,"0")}`} t={t}/>
+        <SHdr title="VESSEL PROFILE" sub={`Identity for DU-${String(nextIdx).padStart(2,"00")}`} t={t}/>
         <Card t={t} style={{padding:20,marginBottom:18}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
-            <div><div style={{fontSize:9,fontWeight:700,color:t.textSub,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:7,fontFamily:"'Rajdhani',sans-serif"}}>Vessel Name <span style={{fontWeight:400,color:t.textMuted}}>(optional)</span></div><TI value={name} onChange={setName} placeholder={`DU-${String(nextIdx).padStart(2,"0")}`} t={t}/></div>
+            <div><div style={{fontSize:9,fontWeight:700,color:t.textSub,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:7,fontFamily:"'Rajdhani',sans-serif"}}>Vessel Name <span style={{fontWeight:400,color:t.textMuted}}>(optional)</span></div><TI value={name} onChange={setName} placeholder={`DU-${String(nextIdx).padStart(2,"00")}`} t={t}/></div>
             <div><div style={{fontSize:9,fontWeight:700,color:t.textSub,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:7,fontFamily:"'Rajdhani',sans-serif"}}>Physical Location</div><TI value={loc} onChange={setLoc} placeholder="e.g. Lab B, Room 204" t={t}/></div>
           </div>
           <div><div style={{fontSize:9,fontWeight:700,color:t.textSub,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:7,fontFamily:"'Rajdhani',sans-serif"}}>Notes</div><TI value={desc} onChange={setDesc} placeholder="e.g. Primary stem cell storage" t={t}/></div>
@@ -538,8 +463,8 @@ const AddVesselTab=({vessels,onAdd,t})=>{
         <SHdr title="REVIEW & CONFIRM" sub="Confirm configuration before adding to fleet" t={t}/>
         <Card t={t} style={{overflow:"hidden",marginBottom:18}}>
           <div style={{background:t.surfaceAlt,borderBottom:`1px solid ${t.border}`,padding:"18px 22px",display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:44,height:44,borderRadius:12,background:`${t.accent}22`,border:`1px solid ${t.accent}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:t.accent,fontFamily:"'Rajdhani',sans-serif"}}>{String(nextIdx).padStart(2,"0")}</div>
-            <div><div style={{fontSize:16,fontWeight:800,color:t.text,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.04em"}}>{name||`DU-${String(nextIdx).padStart(2,"0")}`}</div><div style={{fontSize:10,color:t.textSub,marginTop:2}}>{loc?`📍 ${loc}`:"No location"}{desc?` · ${desc}`:""}</div></div>
+            <div style={{width:44,height:44,borderRadius:12,background:`${t.accent}22`,border:`1px solid ${t.accent}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:t.accent,fontFamily:"'Rajdhani',sans-serif"}}>{String(nextIdx).padStart(2,"00")}</div>
+            <div><div style={{fontSize:16,fontWeight:800,color:t.text,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.04em"}}>{name||`DU-${String(nextIdx).padStart(2,"00")}`}</div><div style={{fontSize:10,color:t.textSub,marginTop:2}}>{loc?`📍 ${loc}`:"No location"}{desc?` · ${desc}`:""}</div></div>
             <div style={{marginLeft:"auto"}}><Chip c={t.ok}>READY TO ADD</Chip></div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)"}}>
@@ -558,7 +483,7 @@ const AddVesselTab=({vessels,onAdd,t})=>{
         <div style={{display:"flex",justifyContent:"space-between"}}>
           <button onClick={()=>setStep(1)} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 18px",borderRadius:10,cursor:"pointer",background:"transparent",border:`1px solid ${t.border}`,color:t.textSub,fontSize:12,fontWeight:600}}><ArrowLeft size={13}/> Back</button>
           <button onClick={handleSubmit} disabled={invalid} className="bs" style={{display:"flex",alignItems:"center",gap:7,padding:"11px 28px",borderRadius:10,cursor:invalid?"not-allowed":"pointer",background:invalid?t.surfaceAlt:`linear-gradient(135deg,${t.accent},${t.accent2})`,border:"none",color:invalid?t.textMuted:"#fff",fontSize:13,fontWeight:800,boxShadow:invalid?"none":`0 6px 22px ${t.accentGlow}`,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.08em"}}>
-            <Plus size={15}/> ADD DU-{String(nextIdx).padStart(2,"0")} TO FLEET
+            <Plus size={15}/> ADD DU-{String(nextIdx).padStart(2,"00")} TO FLEET
           </button>
         </div>
       </div>)}
@@ -595,7 +520,6 @@ const AlertsTab=({alertConfig,setAlertConfig,t})=>{
       <div className="fu" style={{display:"flex",gap:8,marginBottom:18,background:t.surface,border:`1px solid ${t.border}`,borderRadius:12,padding:7,boxShadow:t.sh}}>
         {secs.map(s=>{const ia=sec===s.id;const Ic=s.icon;return(<button key={s.id} onClick={()=>setSec(s.id)} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px 14px",borderRadius:9,cursor:"pointer",background:ia?`${s.color}20`:"transparent",border:`1px solid ${ia?s.color+"45":t.border}`,color:ia?s.color:t.textSub,fontSize:11,fontWeight:700,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.07em",transition:"all .18s"}}><Ic size={14}/>{s.label.toUpperCase()}{s.id==="sms"&&<span style={{background:`${t.ok}22`,color:t.ok,borderRadius:4,padding:"1px 5px",fontSize:8,fontWeight:800}}>{alertConfig.sms.numbers.length}</span>}{s.id==="email"&&<span style={{background:`${t.accent2}22`,color:t.accent2,borderRadius:4,padding:"1px 5px",fontSize:8,fontWeight:800}}>{alertConfig.email.addresses.length}</span>}</button>);})}
       </div>
-
       {sec==="sms"&&(<div className="fu2">
         <div style={{background:t.surface,border:`1px solid ${alertConfig.sms.enabled?t.ok+"40":t.border}`,borderRadius:12,padding:"14px 18px",marginBottom:14,boxShadow:t.sh,display:"flex",alignItems:"center",justifyContent:"space-between",transition:"border-color .3s"}}>
           <div style={{display:"flex",alignItems:"center",gap:11}}><div style={{width:38,height:38,borderRadius:10,background:alertConfig.sms.enabled?`${t.ok}22`:`${t.textMuted}12`,border:`1px solid ${alertConfig.sms.enabled?t.ok+"50":t.border}`,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .3s"}}><Smartphone size={16} color={alertConfig.sms.enabled?t.ok:t.textMuted}/></div><div><div style={{fontSize:14,fontWeight:700,color:t.text,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.04em"}}>SMS ALERT SYSTEM</div><div style={{fontSize:10,color:t.textSub,marginTop:2}}>{alertConfig.sms.numbers.filter(n=>n.active).length} active · {alertConfig.sms.cooldown}min cooldown</div></div></div>
@@ -628,7 +552,6 @@ const AlertsTab=({alertConfig,setAlertConfig,t})=>{
           </div>
         </div>
       </div>)}
-
       {sec==="email"&&(<div className="fu2">
         <div style={{background:t.surface,border:`1px solid ${alertConfig.email.enabled?t.accent2+"40":t.border}`,borderRadius:12,padding:"14px 18px",marginBottom:14,boxShadow:t.sh,display:"flex",alignItems:"center",justifyContent:"space-between",transition:"border-color .3s"}}>
           <div style={{display:"flex",alignItems:"center",gap:11}}><div style={{width:38,height:38,borderRadius:10,background:alertConfig.email.enabled?`${t.accent2}22`:`${t.textMuted}12`,border:`1px solid ${alertConfig.email.enabled?t.accent2+"50":t.border}`,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .3s"}}><Mail size={16} color={alertConfig.email.enabled?t.accent2:t.textMuted}/></div><div><div style={{fontSize:14,fontWeight:700,color:t.text,fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.04em"}}>EMAIL ALERT SYSTEM</div><div style={{fontSize:10,color:t.textSub,marginTop:2}}>{alertConfig.email.addresses.filter(a=>a.active).length} active · {alertConfig.email.cooldown}min cooldown</div></div></div>
@@ -662,7 +585,6 @@ const AlertsTab=({alertConfig,setAlertConfig,t})=>{
           </div>
         </div>
       </div>)}
-
       {sec==="thresholds"&&(<div className="fu2">
         <SHdr title="ALERT TRIGGER THRESHOLDS" sub="Define conditions that fire alerts across all channels" t={t}/>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:18}}>
@@ -685,7 +607,6 @@ const AlertsTab=({alertConfig,setAlertConfig,t})=>{
           </div>
         </Card>
       </div>)}
-
       <div className="fu4" style={{display:"flex",justifyContent:"flex-end",marginTop:18}}>
         <button onClick={()=>{setSaved(true);setTimeout(()=>setSaved(false),2200);}} className="bs" style={{display:"flex",alignItems:"center",gap:7,padding:"10px 26px",borderRadius:10,cursor:"pointer",background:saved?`linear-gradient(135deg,${t.ok},#059669)`:`linear-gradient(135deg,${t.accent},${t.accent2})`,border:"none",color:"#fff",fontSize:12,fontWeight:700,boxShadow:`0 4px 18px ${t.accentGlow}`,transition:"all .3s",fontFamily:"'Rajdhani',sans-serif",letterSpacing:"0.07em"}}>
           {saved?<><CheckCircle size={14}/> SAVED</>:<><Save size={14}/> SAVE ALERT CONFIG</>}
@@ -722,7 +643,7 @@ const ContactsTab=({alertConfig,setAlertConfig,t})=>{
           <input className="ai" type="text" placeholder="Search contacts…" value={q} onChange={e=>setQ(e.target.value)} style={{width:"100%",padding:"9px 13px 9px 32px",background:t.surface,border:`1px solid ${t.border}`,borderRadius:9,color:t.text,fontSize:12,fontFamily:"'Outfit',sans-serif",boxShadow:t.sh}} onFocus={e=>{e.target.style.borderColor=t.inFo;e.target.style.boxShadow=`0 0 0 3px ${t.accent}18`;}} onBlur={e=>{e.target.style.borderColor=t.border;e.target.style.boxShadow=t.sh;}}/>
         </div>
         <div style={{display:"flex",gap:5,background:t.surface,border:`1px solid ${t.border}`,borderRadius:9,padding:4,boxShadow:t.sh}}>
-          {[{v:"both",l:"All"},{v:"sms",l:"SMS"},{v:"email",l:"Email"}].map(o=>{const ia=view===o.v;return(<button key={o.v} onClick={()=>setView(o.v)} style={{padding:"6px 12px",borderRadius:7,cursor:"pointer",background:ia?`${t.accent}20`:"transparent",border:`1px solid ${ia?t.accent+"45":"transparent"}`,color:ia?t.accent:t.textSub,fontSize:10,fontWeight:700,fontFamily:"'Rajdhani',sans-serif",transition:"all .18s"}}>{o.l}</button>);})  }
+          {[{v:"both",l:"All"},{v:"sms",l:"SMS"},{v:"email",l:"Email"}].map(o=>{const ia=view===o.v;return(<button key={o.v} onClick={()=>setView(o.v)} style={{padding:"6px 12px",borderRadius:7,cursor:"pointer",background:ia?`${t.accent}20`:"transparent",border:`1px solid ${ia?t.accent+"45":"transparent"}`,color:ia?t.accent:t.textSub,fontSize:10,fontWeight:700,fontFamily:"'Rajdhani',sans-serif",transition:"all .18s"}}>{o.l}</button>);})}
         </div>
         <button onClick={()=>setAlertConfig(c=>({...c,sms:{...c.sms,numbers:[...c.sms.numbers,{id:Date.now(),label:"",number:"",country:"+1",active:true,alerts:{rising:true,declining:true,outOfRange:true,lowLevel:true}}]}}))} style={{display:"flex",alignItems:"center",gap:5,padding:"8px 14px",borderRadius:9,cursor:"pointer",background:`${t.ok}22`,border:`1px solid ${t.ok}40`,color:t.ok,fontSize:10,fontWeight:700,fontFamily:"'Rajdhani',sans-serif"}}><Phone size={11}/> Add SMS</button>
         <button onClick={()=>setAlertConfig(c=>({...c,email:{...c.email,addresses:[...c.email.addresses,{id:Date.now(),label:"",email:"",active:true,alerts:{rising:true,declining:true,outOfRange:true,lowLevel:true}}]}}))} style={{display:"flex",alignItems:"center",gap:5,padding:"8px 14px",borderRadius:9,cursor:"pointer",background:`${t.accent2}22`,border:`1px solid ${t.accent2}40`,color:t.accent2,fontSize:10,fontWeight:700,fontFamily:"'Rajdhani',sans-serif"}}><Mail size={11}/> Add Email</button>
@@ -761,9 +682,11 @@ const ContactsTab=({alertConfig,setAlertConfig,t})=>{
 };
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
-export default function App(){
+export default function AdminDashboard(){
+  // ── useNavigate for sign-out redirect ──────────────────────────────────────
+  const navigate = useNavigate();
+
   const [dark,setDark]=useState(true);
-  const [loggedIn,setLoggedIn]=useState(false);
   const t=dark?T.dark:T.light;
   const [tab,setTab]=useState("overview");
   const [vessels,setVessels]=useState(()=>load()?.vessels??Array.from({length:10},DV));
@@ -775,7 +698,6 @@ export default function App(){
   const [lastUp,setLastUp]=useState(new Date());
 
   useEffect(()=>{
-    if(!loggedIn)return;
     setLiveData(gl(vessels));setTimeData(gs(vessels));
     const iv=setInterval(()=>{
       setLiveData(gl(vessels));
@@ -783,9 +705,7 @@ export default function App(){
       setTimeData(p=>[...p.slice(-19),gp(vessels,lbl)]);setLastUp(now);
     },5000);
     return()=>clearInterval(iv);
-  },[vessels,loggedIn]);
-
-  if(!loggedIn) return <SignInPage onLogin={()=>setLoggedIn(true)} dark={dark} setDark={setDark}/>;
+  },[vessels]);
 
   const showToast=(m,ok=true)=>{setToast({m,ok});setTimeout(()=>setToast(null),2800);};
   const hCh=(vi,sk2,b,v)=>{setVessels(p=>p.map((vx,i)=>i===vi?{...vx,[sk2]:{...vx[sk2],[b]:v}}:vx));setUnsaved(true);};
@@ -793,7 +713,14 @@ export default function App(){
   const hAdd=(cfg)=>{setVessels(v=>[...v,cfg]);setUnsaved(true);showToast(`DU-${String(vessels.length+1).padStart(2,"0")} added to fleet`);};
   const hSave=()=>{const inv=vessels.some(v=>SM.some(s=>v[s.key].min>=v[s.key].max));if(inv){showToast("Fix invalid ranges before saving",false);return;}persist({vessels,alertConfig,updatedAt:new Date().toISOString()});setUnsaved(false);showToast("Configuration saved successfully");};
   const hReset=()=>{setVessels(Array.from({length:10},DV));setUnsaved(true);showToast("Reset to factory defaults");};
-  const handleSignOut=()=>{setLoggedIn(false);setTab("overview");};
+
+  // ── Sign-out: clear tokens + redirect to /login ────────────────────────────
+  const handleSignOut=()=>{
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
+    navigate("/login", { replace: true });
+  };
 
   const TABS=[
     {id:"overview",label:"Overview",   icon:Home,    badge:null},

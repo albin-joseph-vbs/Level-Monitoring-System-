@@ -5,7 +5,6 @@ import LoginPage from "./pages/Loginpage";
 import AdminDashboard from "./pages/AdminDashboard";
 
 // ─── Auth check ───────────────────────────────────────────────────────────────
-// Reads the access_token saved by LoginPage after a successful /api/login/ call
 const isAuthenticated = (): boolean => {
   return !!localStorage.getItem("access_token");
 };
@@ -30,8 +29,10 @@ const App: React.FC = () => {
         />
 
         {/* Protected dashboard */}
-        <Route path="/dashboard"element={<PrivateRoute element={<SensorDashboard />} />}/>
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/dashboard" element={<PrivateRoute element={<SensorDashboard />} />} />
+
+        {/* Protected admin — same guard as dashboard */}
+        <Route path="/admin" element={<PrivateRoute element={<AdminDashboard />} />} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/login" replace />} />
